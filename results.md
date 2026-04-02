@@ -1,2 +1,2 @@
-### System Recalibration: 20:16 SAST
-The site has high-level encryption active. The agent is scheduled to re-attempt at 00:05 SAST during the low-security window.
+### Security Wall Active: 20:25 SAST
+The site is currently in 'High Security' mode. Your autonomous agent will wait for the **00:05 SAST** low-traffic window to execute the extraction when defenses are lowered.
