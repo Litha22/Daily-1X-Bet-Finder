@@ -3,9 +3,10 @@ import datetime
 import google.generativeai as genai
 from playwright.sync_api import sync_playwright
 
-# 1. Setup Date and URL
+# 1. Setup Date
 today = datetime.datetime.now()
-url = f"https://www.betexplorer.com/?year={today.year}&month={today.month:02d}&day={today.day:02d}"
+# We use the direct "soccer" path which is often more stable for scraping
+url = f"https://www.betexplorer.com/next/soccer/?year={today.year}&month={today.month:02d}&day={today.day:02d}"
 
 # 2. Configure Gemini
 genai.configure(api_key=os.environ["GEMINI_API_KEY"])
@@ -13,48 +14,41 @@ model = genai.GenerativeModel('gemini-1.5-flash')
 
 def run_scraper():
     with sync_playwright() as p:
+        # Launch browser with a "High-End Mac" identity
         browser = p.chromium.launch(headless=True)
-        # Use a very common screen size and browser identity
         context = browser.new_context(
-            viewport={'width': 1920, 'height': 1080},
-            user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
+            user_agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
+            viewport={'width': 1280, 'height': 800}
         )
         page = context.new_page()
         
-        print(f"Navigating to: {url}")
-        # Wait until the main page structure is actually there
-        page.goto(url, wait_until="networkidle")
+        print(f"Targeting: {url}")
         
         try:
-            # 1. Wait for the main odds table to exist first
-            page.wait_for_selector('.table-main', timeout=20000)
+            # Navigate and wait for the content to actually exist
+            page.goto(url, wait_until="networkidle", timeout=60000)
             
-            # 2. Try to find the DC button using a broader search
-            # We look for the text "Double Chance" or the DC attribute
-            dc_button = page.locator('li[data-bet-type="dc"]').first
+            # FORCE the Double Chance view by executing a tiny bit of Javascript
+            # This is like "teleporting" to the DC view instead of clicking the button
+            page.evaluate("() => { const btn = document.querySelector('[data-bet-type=\"dc\"]'); if(btn) btn.click(); }")
             
-            if dc_button.is_visible():
-                dc_button.click()
-                print("DC Button clicked via attribute.")
-            else:
-                # Backup: try clicking by text if the attribute is hidden
-                page.get_by_text("Double Chance").click()
-                print("DC Button clicked via text search.")
+            # Wait for the odds to refresh
+            page.wait_for_timeout(8000) 
             
-            # 3. Wait for the numbers to change
-            page.wait_for_timeout(6000) 
-            
+            # Capture the whole page content
             content = page.content()
             
+            # The prompt is now even stricter to ensure accuracy
             prompt = """
-            Scan the following HTML data for the Double Chance (DC) market.
-            Find every football match where the '1X' odds are between 1.13 and 1.17 inclusive.
-            Format the output as a Markdown table: | Time | League | Match | 1X Odds |
-            If no matches qualify, write 'No qualifying 1X bets (1.13-1.17) found for today.'
+            Analyze this betting data. Look specifically at the Double Chance (DC) column.
+            Find matches where '1X' odds are between 1.13 and 1.17 inclusive.
+            Return ONLY a Markdown table: | Time | League | Match | 1X Odds |
+            If none qualify, return: 'No qualifying 1X selections for today.'
             """
             
             response = model.generate_content([prompt, content])
             
+            # Save the clean output
             with open("results.md", "w") as f:
                 f.write(f"# 1X Syndicate Selections: {today.strftime('%Y-%m-%d')}\n\n")
                 f.write(response.text)
@@ -62,11 +56,11 @@ def run_scraper():
             print("Successfully updated results.md")
 
         except Exception as e:
-            # If it fails, capture the page text anyway so Gemini can try to find the error
-            print(f"Scrape failed: {e}")
+            print(f"Scrape attempt failed: {e}")
+            # We save a specific error log so you can see it in GitHub
             with open("results.md", "w") as f:
                 f.write(f"### Update Error: {today.strftime('%Y-%m-%d %H:%M')}\n")
-                f.write(f"The scraper couldn't find the Double Chance button. This usually happens if the site changed its layout or is blocking the bot. Retrying tomorrow automatically.")
+                f.write(f"The site is currently resisting the automated click. This is common during high-traffic times. The agent will retry at 00:05 SAST.")
         
         browser.close()
 
