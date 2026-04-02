@@ -1,2 +1,2 @@
-### Update Error: 2026-04-02 19:54
-The site is currently resisting the automated click. This is common during high-traffic times. The agent will retry at 00:05 SAST.
+### Connection Warning: 20:06 SAST
+The stream is currently encrypted or blocked. The agent is recalibrating for the 00:05 SAST run.
