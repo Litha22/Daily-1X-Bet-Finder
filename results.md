@@ -1,2 +1,2 @@
-### Connection Warning: 20:06 SAST
-The stream is currently encrypted or blocked. The agent is recalibrating for the 00:05 SAST run.
+### Connection Warning: 20:10 SAST
+The site is heavily throttled. The agent will attempt the 00:05 SAST run when traffic is lower.
