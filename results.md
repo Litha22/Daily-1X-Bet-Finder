@@ -1,2 +1,2 @@
-### Update Error: 2026-04-02 19:51
-The scraper couldn't find the Double Chance button. This usually happens if the site changed its layout or is blocking the bot. Retrying tomorrow automatically.
+### Update Error: 2026-04-02 19:54
+The site is currently resisting the automated click. This is common during high-traffic times. The agent will retry at 00:05 SAST.
