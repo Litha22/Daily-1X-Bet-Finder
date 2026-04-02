@@ -1,2 +1,2 @@
-### Connection Warning: 20:10 SAST
-The site is heavily throttled. The agent will attempt the 00:05 SAST run when traffic is lower.
+### System Recalibration: 20:16 SAST
+The site has high-level encryption active. The agent is scheduled to re-attempt at 00:05 SAST during the low-security window.
