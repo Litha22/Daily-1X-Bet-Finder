@@ -1,2 +1,2 @@
-### Security Wall Active: 20:25 SAST
-The site is currently in 'High Security' mode. Your autonomous agent will wait for the **00:05 SAST** low-traffic window to execute the extraction when defenses are lowered.
+### Security Wall Active: 20:28 SAST
+The site is in High-Security mode. Your agent is waiting for the **00:05 SAST** low-traffic window to execute.
