@@ -1,0 +1,30 @@
+name: Daily 1X Scraper
+on:
+  schedule:
+    - cron: '5 22 * * *' # This runs at 00:05 SAST (22:05 UTC)
+  workflow_dispatch: # This adds a manual "Run" button for testing
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+      - name: Install Dependencies
+        run: |
+          pip install google-generativeai playwright
+          playwright install chromium
+      - name: Run Scraper
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: python scraper.py
+      - name: Commit Results
+        run: |
+          git config --global user.name 'GitHub Action'
+          git config --global user.email 'action@github.com'
+          git add results.md
+          git commit -m "Updated daily bets" || exit 0
+          git push
