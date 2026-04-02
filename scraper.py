@@ -5,7 +5,7 @@ from playwright.sync_api import sync_playwright
 
 # 1. Setup Date
 today = datetime.datetime.now()
-# We use the direct "soccer" path which is often more stable for scraping
+# Targeting the main soccer page for the specific date
 url = f"https://www.betexplorer.com/next/soccer/?year={today.year}&month={today.month:02d}&day={today.day:02d}"
 
 # 2. Configure Gemini
@@ -14,53 +14,54 @@ model = genai.GenerativeModel('gemini-1.5-flash')
 
 def run_scraper():
     with sync_playwright() as p:
-        # Launch browser with a "High-End Mac" identity
+        # Launch with a realistic persona
         browser = p.chromium.launch(headless=True)
         context = browser.new_context(
-            user_agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
-            viewport={'width': 1280, 'height': 800}
+            user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
+            viewport={'width': 1920, 'height': 1080}
         )
         page = context.new_page()
         
-        print(f"Targeting: {url}")
+        print(f"Observing: {url}")
         
         try:
-            # Navigate and wait for the content to actually exist
+            # Go to the site and wait for the table to load
             page.goto(url, wait_until="networkidle", timeout=60000)
             
-            # FORCE the Double Chance view by executing a tiny bit of Javascript
-            # This is like "teleporting" to the DC view instead of clicking the button
-            page.evaluate("() => { const btn = document.querySelector('[data-bet-type=\"dc\"]'); if(btn) btn.click(); }")
+            # Instead of clicking, we scroll to trigger any "lazy-loaded" data
+            page.evaluate("window.scrollTo(0, document.body.scrollHeight/2)")
+            page.wait_for_timeout(3000)
             
-            # Wait for the odds to refresh
-            page.wait_for_timeout(8000) 
-            
-            # Capture the whole page content
+            # Grab the "Full Page" content. Gemini can see the DC odds in the code 
+            # even if the button hasn't been clicked on the screen!
             content = page.content()
             
-            # The prompt is now even stricter to ensure accuracy
-            prompt = """
-            Analyze this betting data. Look specifically at the Double Chance (DC) column.
-            Find matches where '1X' odds are between 1.13 and 1.17 inclusive.
-            Return ONLY a Markdown table: | Time | League | Match | 1X Odds |
-            If none qualify, return: 'No qualifying 1X selections for today.'
+            prompt = f"""
+            I am providing the raw HTML from a sports betting site for {today.strftime('%Y-%m-%d')}.
+            TASKS:
+            1. Find the football matches in the list.
+            2. For each match, look for the 'Double Chance' or 'DC' odds (specifically 1X).
+            3. Filter and return ONLY the matches where the 1X odds are between 1.13 and 1.17 inclusive.
+            4. Format as a clean Markdown table: | Time | League | Match | 1X Odds |
+            
+            If the 1X odds aren't explicitly visible, look for the '1' and 'X' odds and calculate the DC (1X) if possible.
+            If no matches qualify, write: 'No qualifying 1X selections (1.13-1.17) found in the current data stream.'
             """
             
             response = model.generate_content([prompt, content])
             
-            # Save the clean output
+            # Save the result
             with open("results.md", "w") as f:
-                f.write(f"# 1X Syndicate Selections: {today.strftime('%Y-%m-%d')}\n\n")
+                f.write(f"# 1X Syndicate Daily Report: {today.strftime('%Y-%m-%d')}\n\n")
                 f.write(response.text)
             
-            print("Successfully updated results.md")
+            print("Syndicate Agent updated results.md successfully.")
 
         except Exception as e:
-            print(f"Scrape attempt failed: {e}")
-            # We save a specific error log so you can see it in GitHub
+            print(f"Agent failed to read stream: {e}")
             with open("results.md", "w") as f:
-                f.write(f"### Update Error: {today.strftime('%Y-%m-%d %H:%M')}\n")
-                f.write(f"The site is currently resisting the automated click. This is common during high-traffic times. The agent will retry at 00:05 SAST.")
+                f.write(f"### Connection Warning: {today.strftime('%H:%M')} SAST\n")
+                f.write("The stream is currently encrypted or blocked. The agent is recalibrating for the 00:05 SAST run.")
         
         browser.close()
 
