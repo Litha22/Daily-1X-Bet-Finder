@@ -1,32 +1,5 @@
-name: Daily 1X Scraper
-on:
-  schedule:
-    - cron: '5 22 * * *' 
-  workflow_dispatch: 
-
-jobs:
-  scrape:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write  # This explicitly tells GitHub it's okay to save the file
-    steps:
-      - uses: actions/checkout@v4 # Updated to v4
-      - name: Set up Python
-        uses: actions/setup-python@v5 # Updated to v5
+- name: Upload Raw Predictions
+        uses: actions/upload-artifact@v4
         with:
-          python-version: '3.11'
-      - name: Install Dependencies
-        run: |
-          pip install google-generativeai playwright
-          playwright install chromium
-      - name: Run Scraper
-        env:
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-        run: python scraper.py
-      - name: Commit Results
-        run: |
-          git config --global user.name 'GitHub Action'
-          git config --global user.email 'action@github.com'
-          git add results.md
-          git commit -m "Updated daily bets" || exit 0
-          git push
+          name: sports-ai-raw-data
+          path: ./predictions_report.csv
