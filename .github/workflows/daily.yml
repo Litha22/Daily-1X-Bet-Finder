@@ -1,5 +1,7 @@
-- name: Upload Raw Predictions
-        uses: actions/upload-artifact@v4
-        with:
-          name: sports-ai-raw-data
-          path: ./predictions_report.csv
+- name: Commit and Push Data
+        run: |
+          git config --global user.name 'Syndicate-Agent'
+          git config --global user.email 'agent@xcott.com'
+          git add latest_predictions.csv
+          git commit -m "New Prediction Feed Delivered" || exit 0
+          git push
