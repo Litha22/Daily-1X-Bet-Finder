@@ -31,6 +31,7 @@ jobs:
         run: |
           git config --global user.name 'Syndicate-Bot'
           git config --global user.email 'bot@xcott.com'
-          git add latest_predictions.csv
-          git commit -m "New data package delivered" || echo "No changes to commit"
+          # This line now tracks BOTH the latest file and the archive folder
+          git add latest_predictions.csv archive/*.csv 
+          git commit -m "Data Feed & Archive Updated" || echo "No changes to commit"
           git push
