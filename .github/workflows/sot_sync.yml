@@ -1,14 +1,14 @@
 name: Standalone SOT Scraper
 on:
   schedule:
-    - cron: '0 1 * * *' # Runs daily at 01:00 UTC (captures Yesterday/Today/Tomorrow accurately)
-  workflow_dispatch: # Allows you to trigger it manually from the "Actions" tab
+    - cron: '0 2 * * *' # Runs daily at 02:00 UTC
+  workflow_dispatch: # Allows you to trigger it manually from the Actions tab
 
 jobs:
   build:
     runs-on: ubuntu-latest
     
-    # Critical: This gives the Action permission to write the new files to your repo
+    # Permission is mandatory for the "git push" at the end
     permissions:
       contents: write
 
@@ -31,7 +31,7 @@ jobs:
           pip install selenium webdriver-manager pandas
 
       - name: Run SOT Scraper
-        # This executes the specific standalone file we just updated
+        # This executes your standalone python file
         run: python sot_scraper.py
 
       - name: Sync and Push Data
@@ -39,13 +39,16 @@ jobs:
           git config --global user.name "GitHub Action"
           git config --global user.email "action@github.com"
           
-          # Stage the new folder and the three specific CSV files
+          # Create folder if it doesn't exist to prevent git error
+          mkdir -p sot_data
+          
+          # Stage the changes
           git add sot_data/
           
-          # Only commit if there are actually new results to avoid workflow errors
+          # Only commit if there are actually changes in the folder
           if [ -n "$(git status --porcelain)" ]; then
             git commit -m "Auto-sync SOT stats: $(date +'%Y-%m-%d')"
             git push
           else
-            echo "No changes detected. Skipping commit."
+            echo "No new data found to commit."
           fi
