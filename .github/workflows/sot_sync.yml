@@ -1,15 +1,17 @@
 name: Standalone SOT Scraper
 on:
   schedule:
-    - cron: '30 0 * * *' # Runs daily at 00:30 UTC
-  workflow_dispatch: # Allows you to trigger it manually from the Actions tab
+    - cron: '0 1 * * *' # Runs daily at 01:00 UTC (captures Yesterday/Today/Tomorrow accurately)
+  workflow_dispatch: # Allows you to trigger it manually from the "Actions" tab
 
 jobs:
-  scrape_sot:
+  build:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write # Needed to create and push the new folders/files
     
+    # Critical: This gives the Action permission to write the new files to your repo
+    permissions:
+      contents: write
+
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -19,22 +21,31 @@ jobs:
         with:
           python-version: '3.10'
 
-      - name: Install Chrome and Drivers
+      - name: Install Google Chrome
         run: |
           sudo apt-get update
           sudo apt-get install -y google-chrome-stable
-          
-      - name: Install Dependencies
+
+      - name: Install Python Dependencies
         run: |
           pip install selenium webdriver-manager pandas
 
       - name: Run SOT Scraper
+        # This executes the specific standalone file we just updated
         run: python sot_scraper.py
 
-      - name: Commit and Push SOT Data
+      - name: Sync and Push Data
         run: |
           git config --global user.name "GitHub Action"
           git config --global user.email "action@github.com"
+          
+          # Stage the new folder and the three specific CSV files
           git add sot_data/
-          # Only commit if there are actually changes to avoid errors
-          git diff --quiet && git diff --staged --quiet || (git commit -m "Auto-update SOT stats: $(date +'%Y-%m-%d')" && git push)
+          
+          # Only commit if there are actually new results to avoid workflow errors
+          if [ -n "$(git status --porcelain)" ]; then
+            git commit -m "Auto-sync SOT stats: $(date +'%Y-%m-%d')"
+            git push
+          else
+            echo "No changes detected. Skipping commit."
+          fi
